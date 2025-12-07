@@ -1,0 +1,30 @@
+# Communication
+websockets>=12.0
+
+# Audio Processing
+sounddevice>=0.4.6
+soundfile>=0.12.1
+scipy>=1.10.0
+librosa>=0.10.0
+soxr>=0.3.0  # High-quality audio resampling
+
+# Speech & Voice
+torch>=2.0.0
+torchaudio>=2.0.0  # Required by SpeechBrain for import checks (not used for actual audio loading)
+speechbrain>=1.0.0
+
+# Computer Vision
+opencv-python>=4.8.0
+
+# Face Recognition
+insightface>=0.7.3
+onnxruntime-gpu>=1.16.0
+
+# Utilities
+numpy>=1.24.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# Rust Recorder (built separately)
+# See recorder/README.md for build instructions

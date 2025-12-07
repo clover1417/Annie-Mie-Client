@@ -1,0 +1,24 @@
+[package]
+name = "recorder"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "recorder"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.20", features = ["extension-module"] }
+cpal = "0.15"
+nokhwa = { version = "0.10", features = ["input-msmf", "output-threaded"] }
+anyhow = "1.0"
+crossbeam-channel = "0.5"
+chrono = "0.4"
+flacenc = "0.5"
+jpeg-encoder = { version = "0.6", features = ["simd"] }
+parking_lot = "0.12"
+
+[dependencies.image]
+version = "0.24"
+default-features = false
+features = ["jpeg"]

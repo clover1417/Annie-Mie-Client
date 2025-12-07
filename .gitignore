@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual Environment
+venv/
+
+# Environment Variables
+.env
+
+# IDE
+.vscode/
+.idea/
+*.sw[op]
+.DS_Store
+
+# Rust
+recorder/target/
+recorder/Cargo.lock
+recorder/pyproject.toml
+
+# Recordings
+data/recordings/*.wav
+
+# Logs
+*.log
+nul
+
+# LLM Busy Flag
+.llm_busy
