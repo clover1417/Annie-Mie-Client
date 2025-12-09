@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(python -m pip install:*)",
+      "Bash(python -m maturin build:*)",
+      "Bash(tree:*)",
+      "Bash(git ls-tree:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
