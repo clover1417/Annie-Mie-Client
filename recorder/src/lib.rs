@@ -76,6 +76,34 @@ impl NativeRecorder {
         Ok(())
     }
 
+    fn start_audio(&self) -> PyResult<()> {
+        if let Some(audio) = &self.audio {
+            audio.start().map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        }
+        Ok(())
+    }
+
+    fn stop_audio(&self) -> PyResult<()> {
+        if let Some(audio) = &self.audio {
+            audio.stop().map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        }
+        Ok(())
+    }
+
+    fn start_video(&mut self) -> PyResult<()> {
+        if let Some(video) = &mut self.video {
+            video.start().map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+        }
+        Ok(())
+    }
+
+    fn stop_video(&mut self) -> PyResult<()> {
+        if let Some(video) = &mut self.video {
+            video.stop();
+        }
+        Ok(())
+    }
+
     fn read_speech_event(&self) -> PyResult<Option<String>> {
         match self.filepath_rx.try_recv() {
             Ok(filepath) => Ok(Some(filepath)),

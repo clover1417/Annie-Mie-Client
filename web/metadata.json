@@ -1,0 +1,8 @@
+{
+  "name": "Annie Mie Live Interface",
+  "description": "A next-generation multimodal chat interface featuring a central holographic model visualization, real-time voice interaction, and glassmorphic UI controls.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

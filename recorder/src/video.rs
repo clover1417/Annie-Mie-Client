@@ -90,7 +90,7 @@ fn capture_loop(
 
     let index = CameraIndex::Index(config.camera_index);
     let resolution = Resolution::new(config.width, config.height);
-    let camera_fps = 15u32;
+    let camera_fps = config.fps.min(60.0) as u32;
     let camera_format = CameraFormat::new(resolution, FrameFormat::MJPEG, camera_fps);
     let requested = RequestedFormat::new::<RgbFormat>(RequestedFormatType::Closest(camera_format));
 

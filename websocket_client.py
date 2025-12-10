@@ -31,7 +31,9 @@ class AnnieMieClient:
         self.stream_parser = StreamParser()
         self.tts_handler = TTSHandler()
         self.identity_manager = IdentityManager()
+        self.identity_manager = IdentityManager()
         self.running = False
+        self.is_mic_enabled = False
         self.is_llm_busy = False
         self.current_identity = None
         self.is_thinking = False
@@ -260,8 +262,11 @@ class AnnieMieClient:
         else:
             logger.warning("No frames available")
 
-        await self.websocket.send(json.dumps(message))
-        logger.success("Message sent to server")
+        if self.websocket:
+            await self.websocket.send(json.dumps(message))
+            logger.success("Message sent to server")
+        else:
+            logger.warning("Not connected to server, message not sent")
 
         if os.path.exists(audio_path):
             try:
@@ -273,13 +278,18 @@ class AnnieMieClient:
     async def process_audio_events(self):
         logger.info("Starting audio recorder...")
         self.recorder.start()
-        logger.success("Recorder started! Speak to interact with Mie.\n")
+        self.recorder.stop_audio()
+        logger.success("Recorder started! Turn on Microphone to interact with Mie.\n")
 
         while self.running:
-            if self._is_llm_busy_flag():
+            if not self.is_mic_enabled or self._is_llm_busy_flag():
+                # Drain events if any, but don't process
                 filepath = self.recorder.read_speech_event()
                 if filepath and os.path.exists(filepath):
-                    os.remove(filepath)
+                    try:
+                        os.remove(filepath)
+                    except:
+                        pass
                 await asyncio.sleep(0.1)
                 continue
 
