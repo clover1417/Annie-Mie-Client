@@ -11,6 +11,7 @@ build/
 
 # Virtual Environment
 venv/
+.venv/
 
 # Environment Variables
 .env
@@ -20,14 +21,14 @@ venv/
 .idea/
 *.sw[op]
 .DS_Store
+.cursor/
+.claude/
 
 # Rust
 recorder/target/
-recorder/Cargo.lock
-recorder/pyproject.toml
 
-# Recordings
-data/recordings/*.wav
+# Node.js (for web/)
+web/node_modules/
 
 # Logs
 *.log
@@ -35,3 +36,7 @@ nul
 
 # LLM Busy Flag
 .llm_busy
+
+# Model Cache (large files)
+*.onnx
+*.pth

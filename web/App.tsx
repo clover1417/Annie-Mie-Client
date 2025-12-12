@@ -3,7 +3,7 @@ import { LiveClient } from './services/liveClient';
 import { StatusPanel } from './components/StatusPanel';
 import { ControlPanel } from './components/ControlPanel';
 import { ChatBar } from './components/ChatBar';
-import { Visualizer } from './components/Visualizer';
+import { Avatar3D } from './components/Avatar3D';
 import { SettingsButton } from './components/SettingsButton';
 import { AttachedFile } from './types';
 
@@ -12,7 +12,7 @@ const BRIDGE_SERVER_URL = "ws://localhost:8768";
 
 const App: React.FC = () => {
   const [connected, setConnected] = useState(false);
-  const [micOn, setMicOn] = useState(false);
+  const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(false);
   const [thinkMode, setThinkMode] = useState(false);
   const [audioVolume, setAudioVolume] = useState(0);
@@ -75,10 +75,17 @@ const App: React.FC = () => {
 
   const toggleConnection = useCallback(() => {
     if (connected) {
-      liveClientRef.current?.disconnect();
-      setConnected(false);
-    } else {
+      // If connected, just resync instead of disconnect?
+      // The user wants "Sync System". Usually means refresh.
+      // But if they WANT to disconnect, we might need a separate button or long press.
+      // Given the UI redesign "Resync Connection" vs "Sync System",
+      // let's make it always try to Ensure Connection/Sync.
+
+      // If connected, send sync command
       liveClientRef.current?.resync();
+    } else {
+      // If disconnected, try to connect
+      liveClientRef.current?.connect();
     }
   }, [connected]);
 
@@ -87,19 +94,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-slate-50 font-sans selection:bg-blue-100 selection:text-blue-900">
+    <div className="relative w-screen h-screen overflow-hidden bg-white font-sans selection:bg-blue-100 selection:text-blue-900">
 
-      <div className={`absolute inset-0 transition-opacity duration-[2000ms] ${connected ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-200/30 rounded-full blur-[100px] animate-pulse-slow pointer-events-none mix-blend-multiply" />
-        <div className="absolute top-1/3 left-1/3 w-[600px] h-[600px] bg-blue-200/30 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
-      </div>
-
-      <main className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
-        <Visualizer
-          volume={audioVolume}
-          isActive={connected}
-          isThinkMode={thinkMode}
-        />
+      <main className="absolute inset-0 z-10">
+        <Avatar3D />
       </main>
 
       <StatusPanel

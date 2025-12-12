@@ -1,0 +1,3 @@
+from detector.speech_detector import SpeechDetector
+from detector.face_detector import InsightFaceDetector
+from detector.semantic_recognition import SemanticRecognition

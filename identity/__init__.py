@@ -1,3 +1,0 @@
-from identity.identity_manager import IdentityManager
-from identity.identity_store import IdentityStore
-from identity.insightface_detector import InsightFaceDetector

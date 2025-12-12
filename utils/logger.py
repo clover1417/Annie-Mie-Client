@@ -30,6 +30,10 @@ class Logger:
         print(f"{prefix} {message}", file=sys.stderr)
     
     @staticmethod
+    def debug(message, prefix="🔍"):
+        pass
+    
+    @staticmethod
     def recording(message, prefix="🎙️"):
         print(f"\n{prefix} {message}")
     
