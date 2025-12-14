@@ -120,6 +120,8 @@ class StreamParser:
     def _parse_and_emit_tag(self, content: str):
         tag = None
         
+        content = content.replace('\\"', '"')
+        
         if content.startswith('emotion="') and content.endswith('"'):
             value = content[9:-1]
             tag = {"type": "emotion", "value": value}

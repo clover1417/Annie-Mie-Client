@@ -72,6 +72,10 @@ export class LiveClient {
     if (message.type === 'response') {
       console.log("[WS] Server response:", message.data);
     }
+
+    if (message.type === 'simulator_messages') {
+      this.onSimulatorMessagesLoaded?.(message.messages || []);
+    }
   }
 
   send(data: any) {
@@ -103,6 +107,25 @@ export class LiveClient {
   resync() {
     this.send({ type: 'sync' });
   }
+
+  simulateServerMessage(text: string, tokensPerSec: number, firstTokenLatency: number) {
+    this.send({
+      type: 'simulate_server_message',
+      text,
+      tokens_per_sec: tokensPerSec,
+      first_token_latency: firstTokenLatency
+    });
+  }
+
+  saveSimulatorMessages(messages: any[]) {
+    this.send({ type: 'save_simulator_messages', messages });
+  }
+
+  loadSimulatorMessages() {
+    this.send({ type: 'load_simulator_messages' });
+  }
+
+  public onSimulatorMessagesLoaded: ((messages: any[]) => void) | null = null;
 
   disconnect() {
     this.websocket?.close();

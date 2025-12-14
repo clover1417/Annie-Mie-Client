@@ -6,19 +6,22 @@ import { ChatBar } from './components/ChatBar';
 import { Avatar3D } from './components/Avatar3D';
 import { SettingsButton } from './components/SettingsButton';
 import { AttachedFile } from './types';
+import { ServerSimulator } from './components/ServerSimulator';
 
 const DISPLAY_MODEL_NAME = "Qwen3-Omni-30B-A3B-Instruct";
 const BRIDGE_SERVER_URL = "ws://localhost:8768";
 
 const App: React.FC = () => {
   const [connected, setConnected] = useState(false);
-  const [micOn, setMicOn] = useState(true);
-  const [camOn, setCamOn] = useState(false);
+  const [micOn, setMicOn] = useState(false);
+  const [camOn, setCamOn] = useState(true);
   const [thinkMode, setThinkMode] = useState(false);
   const [audioVolume, setAudioVolume] = useState(0);
 
   const [micName, setMicName] = useState("Default Microphone");
   const [camName, setCamName] = useState("Camera 0");
+
+  const [simulatorMessages, setSimulatorMessages] = useState<any[]>([]);
 
   const liveClientRef = useRef<LiveClient | null>(null);
 
@@ -30,11 +33,12 @@ const App: React.FC = () => {
     client.onConnectChange = (isConnected) => {
       setConnected(isConnected);
       if (isConnected) {
-        setMicOn(true);
-        client.toggleMic(true);
-      } else {
-        setMicOn(false);
+        client.loadSimulatorMessages();
       }
+    };
+
+    client.onSimulatorMessagesLoaded = (messages) => {
+      setSimulatorMessages(messages);
     };
 
     navigator.mediaDevices.enumerateDevices().then(devices => {
@@ -75,16 +79,8 @@ const App: React.FC = () => {
 
   const toggleConnection = useCallback(() => {
     if (connected) {
-      // If connected, just resync instead of disconnect?
-      // The user wants "Sync System". Usually means refresh.
-      // But if they WANT to disconnect, we might need a separate button or long press.
-      // Given the UI redesign "Resync Connection" vs "Sync System",
-      // let's make it always try to Ensure Connection/Sync.
-
-      // If connected, send sync command
       liveClientRef.current?.resync();
     } else {
-      // If disconnected, try to connect
       liveClientRef.current?.connect();
     }
   }, [connected]);
@@ -92,6 +88,10 @@ const App: React.FC = () => {
   const handleSendMessage = (text: string, files: AttachedFile[]) => {
     liveClientRef.current?.sendText(text);
   };
+
+  const handleSaveSimulatorMessages = useCallback((messages: any[]) => {
+    liveClientRef.current?.saveSimulatorMessages(messages);
+  }, []);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-white font-sans selection:bg-blue-100 selection:text-blue-900">
@@ -124,6 +124,14 @@ const App: React.FC = () => {
       <ChatBar
         disabled={micOn}
         onSendMessage={handleSendMessage}
+      />
+
+      <ServerSimulator
+        onSimulate={(text, rate, latency) => {
+          liveClientRef.current?.simulateServerMessage(text, rate, latency);
+        }}
+        onSaveMessages={handleSaveSimulatorMessages}
+        initialMessages={simulatorMessages}
       />
 
     </div>

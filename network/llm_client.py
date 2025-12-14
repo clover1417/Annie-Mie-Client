@@ -32,7 +32,6 @@ class AnnieMieClient:
         self.stream_parser = StreamParser()
         self.tts_handler = TTSHandler()
         self.identity_manager = IdentityManager()
-        self.identity_manager = IdentityManager()
         self.running = False
         self.is_mic_enabled = False
         self.is_cam_enabled = False
@@ -40,6 +39,8 @@ class AnnieMieClient:
         self.current_identity = None
         self.is_thinking = False
         self._pending_stats = None
+        self._retry_count = 0
+        self._is_simulating = False
 
     async def connect(self):
         logger.info(f"Connecting to server: {self.server_uri}")
@@ -94,6 +95,7 @@ class AnnieMieClient:
 
         def on_think_end(content):
             self.is_thinking = False
+            logger.info(f"🧠 Think: {content}")
 
         def on_function_call(content):
             logger.info(f"[Function: {content[:60]}...]")
@@ -108,11 +110,8 @@ class AnnieMieClient:
         while self.running:
             try:
                 if not self.websocket:
-                    logger.warning("🔄 No connection, attempting to connect...")
-                    if not await self.connect():
-                        logger.error("Connection failed, retrying in 3s...")
-                        await asyncio.sleep(3)
-                        continue
+                    await asyncio.sleep(2)
+                    continue
                 
                 async for message in self.websocket:
                     try:
@@ -171,9 +170,7 @@ class AnnieMieClient:
                 logger.error(f"Error in message handler: {e}")
                 self.websocket = None
             
-            if self.running and not self.websocket:
-                logger.info("🔄 Reconnecting in 3s...")
-                await asyncio.sleep(3)
+            await asyncio.sleep(1)
 
     def _handle_identity_message(self, data):
         identity_ids = data.get("identity_ids", [])
@@ -383,7 +380,8 @@ class AnnieMieClient:
 
         if not await self.connect():
             logger.error("Could not connect to server. Is it running?")
-            return
+            # We won't return here so that we can still use simulation if server is down
+            # return
 
         await self.tts_handler.start()
         self.running = True
@@ -412,3 +410,37 @@ class AnnieMieClient:
         if self.websocket:
             await self.websocket.close()
             logger.info("Disconnected from server")
+
+    async def simulate_message_stream(self, text: str, tokens_per_sec: float, first_token_latency: float):
+        if self._is_simulating:
+            logger.warning("⚠️ Simulation already in progress, ignoring request")
+            return
+        
+        self._is_simulating = True
+        logger.info(f"🧪 Simulating message: '{text[:20]}...' (Speed: {tokens_per_sec} tok/s, Init: {first_token_latency}s)")
+        
+        try:
+            self.is_llm_busy = True
+            self.is_thinking = False
+            self.stream_parser.reset()
+            self.tts_handler.reset()
+            self._set_llm_busy(True)
+            
+            if first_token_latency > 0:
+                await asyncio.sleep(first_token_latency)
+                
+            logger.info("First token reached!")
+            
+            chars_per_token = 4.0
+            delay_per_token = 1.0 / max(0.1, tokens_per_sec)
+            delay_per_char = delay_per_token / chars_per_token
+            
+            for char in text:
+                self.stream_parser.feed(char)
+                await asyncio.sleep(delay_per_char)
+                
+            logger.success("✅ Simulation complete")
+            await self._handle_stream_complete()
+        finally:
+            self._is_simulating = False
+            self._set_llm_busy(False)

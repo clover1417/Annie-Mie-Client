@@ -41,15 +41,38 @@ class TTSHandler:
         self.sentence_buffer += text
         
         while True:
-            match = re.search(r'[.!?。！？](?:\s|$)', self.sentence_buffer)
-            if not match:
+            buffer = self.sentence_buffer
+            
+            if len(buffer) < 2:
                 break
             
-            end_pos = match.end()
-            sentence = self.sentence_buffer[:end_pos].strip()
-            self.sentence_buffer = self.sentence_buffer[end_pos:].lstrip()
+            ELLIPSIS_PLACEHOLDER = '\x00\x00\x00'
+            DECIMAL_PLACEHOLDER = '\x01'
             
-            if sentence:
+            temp = buffer.replace('...', ELLIPSIS_PLACEHOLDER)
+            temp = re.sub(r'(\d)\.(\d)', rf'\1{DECIMAL_PLACEHOLDER}\2', temp)
+            
+            best_match = None
+            for match in re.finditer(r'[.!?。！？]', temp):
+                pos = match.end()
+                
+                if pos < len(temp):
+                    next_char = temp[pos]
+                    if next_char in ' \n\t\r':
+                        best_match = match
+                        break
+                else:
+                    pass
+            
+            if not best_match:
+                break
+            
+            end_pos = best_match.end()
+            
+            sentence = buffer[:end_pos].strip()
+            self.sentence_buffer = buffer[end_pos:].lstrip()
+            
+            if sentence and len(sentence) > 1:
                 asyncio.create_task(self._speak_queue.put(sentence))
 
     async def flush(self):

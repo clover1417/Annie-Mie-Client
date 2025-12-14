@@ -1,8 +1,20 @@
 import os
 import sys
+import logging
+import contextlib
+import io
 import numpy as np
 from typing import List, Dict, Optional
 from utils.logger import logger
+
+
+def _suppress_onnx_logging():
+    logging.getLogger('onnxruntime').setLevel(logging.ERROR)
+    logging.getLogger('insightface').setLevel(logging.ERROR)
+    
+    for name in ['onnx', 'onnxruntime', 'insightface', 'insightface.app', 
+                 'insightface.model_zoo', 'insightface.utils']:
+        logging.getLogger(name).setLevel(logging.ERROR)
 
 
 class InsightFaceDetector:
@@ -69,13 +81,16 @@ class InsightFaceDetector:
                 logger.warning("CUDA not available, using CPU only")
 
             logger.info(f"Loading InsightFace model: {self.model_name}")
-            self.app = FaceAnalysis(
-                name=self.model_name,
-                providers=providers,
-            )
             
-            logger.info("Preparing face analysis (det_size=640x640)...")
-            self.app.prepare(ctx_id=0, det_size=(640, 640))
+            _suppress_onnx_logging()
+            
+            with contextlib.redirect_stdout(io.StringIO()), \
+                 contextlib.redirect_stderr(io.StringIO()):
+                self.app = FaceAnalysis(
+                    name=self.model_name,
+                    providers=providers,
+                )
+                self.app.prepare(ctx_id=0, det_size=(640, 640))
 
             actual_providers = []
             for model in self.app.models.values():

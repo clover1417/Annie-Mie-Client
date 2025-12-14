@@ -34,9 +34,10 @@ class BridgeServer:
         
         connected = await self.client.connect()
         if not connected:
-            logger.warning("Could not connect to LLM server. Will retry on sync.")
-        else:
-            asyncio.create_task(self.client.handle_server_messages())
+            logger.warning("Could not connect to LLM server. Simulation mode available.")
+        
+        # Always start handling server messages even if not connected initially
+        asyncio.create_task(self.client.handle_server_messages())
         
         async with serve(self.handle_web_client, "localhost", 8768):
             logger.success("Bridge Server running on ws://localhost:8768")
@@ -151,13 +152,20 @@ class BridgeServer:
                     "type": "text",
                     "text": text
                 }))
-                
+        
+        elif msg_type == "simulate_server_message":
+            text = data.get("text", "")
+            tokens_per_sec = float(data.get("tokens_per_sec", 10.0))
+            first_token_latency = float(data.get("first_token_latency", 0.5))
+            
+            # Run simulation in the background so it doesn't block the loop
+            asyncio.create_task(self.client.simulate_message_stream(text, tokens_per_sec, first_token_latency))
+            
         elif msg_type == "sync":
             logger.info("🔄 Sync requested...")
             if not self.client.websocket:
                 connected = await self.client.connect()
                 if connected:
-                    await self._run_client_tasks()
                     for client in self.web_clients:
                         await self.send_to_web(client, {"type": "connection", "status": "connected"})
                 else:
@@ -167,6 +175,37 @@ class BridgeServer:
                 logger.info("Already connected to LLM server")
                 for client in self.web_clients:
                     await self.send_to_web(client, {"type": "connection", "status": "connected"})
+        
+        elif msg_type == "save_simulator_messages":
+            messages = data.get("messages", [])
+            self._save_simulator_messages(messages)
+            await self.send_to_web(websocket, {"type": "save_result", "success": True})
+        
+        elif msg_type == "load_simulator_messages":
+            messages = self._load_simulator_messages()
+            await self.send_to_web(websocket, {"type": "simulator_messages", "messages": messages})
+    
+    def _save_simulator_messages(self, messages):
+        import os
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "message_simulator")
+        os.makedirs(data_dir, exist_ok=True)
+        filepath = os.path.join(data_dir, "messages.json")
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(messages, f, ensure_ascii=False, indent=2)
+        logger.info(f"💾 Saved {len(messages)} simulator messages")
+    
+    def _load_simulator_messages(self):
+        import os
+        filepath = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "message_simulator", "messages.json")
+        if os.path.exists(filepath):
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    messages = json.load(f)
+                logger.info(f"📂 Loaded {len(messages)} simulator messages")
+                return messages
+            except Exception as e:
+                logger.error(f"Failed to load simulator messages: {e}")
+        return []
                 
     async def send_to_web(self, websocket, data):
         try:
